@@ -6,7 +6,7 @@ on:
         description: "Weather or not to build all targets"
         required: true
         type: boolean
-      
+
       godot_version:
         description: "Version of godot to be used"
         required: true
@@ -33,6 +33,13 @@ jobs:
             runner: "windows-latest"
             should-run: true
 
+          - name: Windows Editor .NET (target=editor module_mono_enabled=yes)
+            cache-name: windows-editor-net
+            artifact-name: windows-editor-net
+            build-options: "target=editor module_mono_enabled=yes"
+            runner: "windows-latest"
+            should-run: true
+
           - name: Windows Editor LuaJIT (target=editor,luaapi_luaver=jit)
             cache-name: windows-editor-luajit
             artifact-name: windows-editor-luajit
@@ -53,7 +60,7 @@ jobs:
             build-options: "target=template_debug arch=x86_64"
             runner: "ubuntu-20.04"
             should-run: ${{ inputs.fullbuild }}
-          
+
           - name: Windows Template (target=template_release,arch=x86_32)
             cache-name: windows-template
             artifact-name: export-templates
@@ -68,7 +75,7 @@ jobs:
             runner: "ubuntu-20.04"
             should-run: ${{ inputs.fullbuild }}
         exclude:
-          - {opts: {should-run: false}}
+          - { opts: { should-run: false } }
 
     steps:
       - uses: actions/checkout@v3
@@ -112,7 +119,7 @@ jobs:
           python -m pip install scons pywin32
           python --version
           scons --version
-        
+
       - name: Configuring Python packages (Linux)
         if: matrix.opts.runner != 'windows-latest'
         run: |
@@ -121,20 +128,39 @@ jobs:
           python --version
           scons --version
 
-      
+      - name: Installing .NET 7.0
+        if: matrix.opts.runner == 'windows-latest'
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "7.0.x"
+
       - name: Compilation
         working-directory: ./scripts
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           scons platform=windows ${{ matrix.opts.build-options }} ${{ env.SCONSFLAGS }}
-          
+
+      - name: Generating the C# glue
+        if: matrix.opts.runner == 'windows-latest'
+        run: |
+          scripts/godot/bin/godot.windows.editor.x86_64.mono --generate-mono-glue scripts/godot/modules/mono/glue
+
+      - name: Create local NuGet source
+        if: matrix.opts.runner == 'windows-latest'
+        run: dotnet nuget add source scripts/godot/MyLocalNugetSource --name MyLocalNugetSource
+
+      - name: Building the managed libraries
+        if: matrix.opts.runner == 'windows-latest'
+        run: py scripts/godot/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=scripts/godot/monobin --godot-platform=windows --push-nupkgs-local scripts/godot/MyLocalNugetSource
+
       - name: Prepare artifact (Windows)
         if: matrix.opts.runner == 'windows-latest'
         shell: bash
         run: |
           rm -rf scripts/godot/bin/{*.exp,*.lib,*.pdb}
-      
+          mv scripts/godot/monobin/GodotSharp scripts/godot/bin/
+
       - name: Prepare artifact (Linux)
         if: matrix.opts.runner != 'windows-latest'
         shell: bash
@@ -152,13 +178,13 @@ jobs:
           mv scripts/godot/bin/godot.windows.template_debug.x86_64.luaAPI.exe scripts/godot/templates/windows_debug_x86_64.exe || true
           mv scripts/godot/bin/godot.windows.template_release.x86_32.luaAPI.exe scripts/godot/templates/windows_release_x86_32.exe || true
           mv scripts/godot/bin/godot.windows.template_debug.x86_32.luaAPI.exe scripts/godot/templates/windows_debug_x86_32.exe || true
-          
+
           mv scripts/godot/bin/godot.windows.template_release.x86_64.luaAPI.console.exe scripts/godot/templates/windows_release_x86_64_console.exe || true
           mv scripts/godot/bin/godot.windows.template_debug.x86_64.luaAPI.console.exe scripts/godot/templates/windows_debug_x86_64_console.exe || true
           mv scripts/godot/bin/godot.windows.template_release.x86_32.luaAPI.console.exe scripts/godot/templates/windows_release_x86_32_console.exe || true
           mv scripts/godot/bin/godot.windows.template_debug.x86_32.luaAPI.console.exe scripts/godot/templates/windows_debug_x86_32_console.exe || true
 
-          
+
           rm -rf scripts/godot/bin/*
           mv scripts/godot/templates scripts/godot/bin/
 
@@ -167,8 +193,15 @@ jobs:
         shell: bash
         run: |
           cp -n README.md LICENSE scripts/godot/bin/
-      
+
       - uses: actions/upload-artifact@v2
         with:
           name: ${{matrix.opts.artifact-name}}
           path: scripts/godot/bin/*
+
+      - name: Upload NuGet packages
+        if: matrix.opts.runner == 'windows-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: NuGetPackages
+          path: scripts/godot/MyLocalNuggetSource/*
