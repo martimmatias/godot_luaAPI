@@ -144,7 +144,7 @@ jobs:
 
       - name: Build .NET assemblies
         if: matrix.opts.runner == 'windows-latest'
-        run: python3 scripts/godot/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=scripts/godot/monobin --godot-platform=windows --push-nupkgs-local scripts/godot/MyLocalNugetSource
+        run: python3 scripts/godot/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=scripts/godot/monobin --godot-platform=windows --push-nupkgs-local MyLocalNugetSource
 
       - name: Prepare artifact (Windows)
         if: matrix.opts.runner == 'windows-latest'
