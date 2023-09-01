@@ -27,42 +27,42 @@ jobs:
       matrix:
         opts:
           - name: Windows Editor (target=editor)
-            cache-name: windows-editor
+            cache-name: windows-mono-editor
             artifact-name: windows-editor
             build-options: "target=editor module_mono_enabled=yes"
-            runner: "ubuntu-20.04"
+            runner: "windows-latest"
             should-run: true
 
           - name: Windows Editor LuaJIT (target=editor,luaapi_luaver=jit)
-            cache-name: windows-editor-luajit
+            cache-name: windows-mono-editor-luajit
             artifact-name: windows-editor-luajit
             build-options: "target=editor luaapi_luaver=jit debug_symbols=no module_mono_enabled=yes"
-            runner: "ubuntu-20.04"
+            runner: "windows-latest"
             should-run: ${{ inputs.fullbuild }}
 
           - name: Windows Template (target=template_release,arch=x86_64)
-            cache-name: windows-template
+            cache-name: windows-mono-template
             artifact-name: export-templates
             build-options: "target=template_release arch=x86_64 module_mono_enabled=yes"
             runner: "ubuntu-20.04"
             should-run: true # Verify Cross Compile on Check only runs
 
           - name: Windows Template Debug (target=template_debug,arch=x86_64)
-            cache-name: windows-template-debug
+            cache-name: windows-mono-template-debug
             artifact-name: export-templates
             build-options: "target=template_debug arch=x86_64 module_mono_enabled=yes"
             runner: "ubuntu-20.04"
             should-run: ${{ inputs.fullbuild }}
 
           - name: Windows Template (target=template_release,arch=x86_32)
-            cache-name: windows-template
+            cache-name: windows-mono-template
             artifact-name: export-templates
             build-options: "target=template_release arch=x86_32 module_mono_enabled=yes"
             runner: "ubuntu-20.04"
             should-run: ${{ inputs.fullbuild }}
 
           - name: Windows Template Debug (target=template_debug,arch=x86_32)
-            cache-name: windows-template-debug
+            cache-name: windows-mono-template-debug
             artifact-name: export-templates
             build-options: "target=template_debug arch=x86_32 module_mono_enabled=yes"
             runner: "ubuntu-20.04"
@@ -138,9 +138,12 @@ jobs:
           scons platform=windows ${{ matrix.opts.build-options }} ${{ env.SCONSFLAGS }}
 
       - name: Generating the C# glue
-        run: scripts/godot/bin/godot.windows.editor.x86_64.luaAPI.mono --generate-mono-glue scripts/godot/modules/mono/glue
+        if: matrix.opts.runner == 'windows-latest'
+        shell: pwsh
+        run: scripts/godot/bin/godot.windows.editor.x86_64.luaAPI.mono.exe --generate-mono-glue scripts/godot/modules/mono/glue
 
       - name: Build .NET assemblies
+        if: matrix.opts.runner == 'windows-latest'
         run: python3 scripts/godot/modules/mono/build_scripts/build_assemblies.py --godot-output-dir=scripts/godot/monobin --godot-platform=windows --push-nupkgs-local scripts/godot/MyLocalNugetSource
 
       - name: Prepare artifact (Windows)
@@ -157,6 +160,7 @@ jobs:
           strip scripts/godot/bin/*.exe
 
       - name: Prepare artifact GodotSharp folder
+        if: matrix.opts.runner == 'windows-latest'
         shell: bash
         run: mv scripts/godot/monobin/GodotSharp scripts/godot/bin/
 
