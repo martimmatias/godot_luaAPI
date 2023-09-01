@@ -46,14 +46,14 @@ jobs:
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
       godot_version: 4.1
-  
+
   macos-package:
     name: 🍎 macOS Package
     needs: macos-build
     uses: ./.github/workflows/macos-package.yml
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
-  
+
   android-build:
     name: 🤖 Android
     needs: static-checks
@@ -61,13 +61,13 @@ jobs:
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
       godot_version: 4.1
-  
+
   android-package:
     name: 🤖 Android Package
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: android-build
     uses: ./.github/workflows/android-package.yml
-    
+
   ios-build:
     name: 🍎 IOS
     needs: static-checks
@@ -75,13 +75,13 @@ jobs:
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
       godot_version: 4.1
-  
+
   ios-package:
     name: 🍎 IOS Package
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: ios-build
     uses: ./.github/workflows/ios-package.yml
-  
+
   web-build:
     name: 🌐 Web
     needs: static-checks
@@ -97,7 +97,15 @@ jobs:
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
       godot_version: 4.1
-  
+
+  windows-mono-build:
+    name: 🎨 Windows .NET
+    needs: static-checks
+    uses: ./.github/workflows/windows-mono.yml
+    with:
+      fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
+      godot_version: 4.1
+
   gdextension-build:
     name: ⚙️ GDExtension
     needs: static-checks
@@ -105,12 +113,12 @@ jobs:
     with:
       fullbuild: ${{ github.event_name == 'workflow_dispatch' }}
       godot_version: 4.1
-  
+
   module-unit-tests:
     name: ⚙️ Module Unit Tests
     needs: linux-build
     uses: ./.github/workflows/module-unit-tests.yml
-  
+
   gdextension-unit-tests:
     name: ⚙️ GDExtension Unit Tests
     needs: gdextension-build
