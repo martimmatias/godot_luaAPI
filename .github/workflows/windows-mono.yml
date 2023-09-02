@@ -128,7 +128,7 @@ jobs:
           dotnet-version: "7.0.x"
 
       - name: Create local NuGet source
-        run: dotnet nuget add source scripts/godot/MyLocalNugetSource --name MyLocalNugetSource
+        run: dotnet nuget add source MyLocalNugetSource --name MyLocalNugetSource
 
       - name: Compilation
         working-directory: ./scripts
@@ -198,4 +198,4 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: nuget-packages
-          path: scripts/godot/MyLocalNugetSource/*
+          path: AppData/Roaming/NuGet/MyLocalNugetSource/*
