@@ -128,7 +128,9 @@ jobs:
           dotnet-version: "7.0.x"
 
       - name: Create local NuGet source
-        run: dotnet nuget add source MyLocalNugetSource --name MyLocalNugetSource
+        run: |
+          dotnet nuget add source MyLocalNugetSource --name MyLocalNugetSource
+          dotnet nuget list source
 
       - name: Compilation
         working-directory: ./scripts
